@@ -1,3 +1,4 @@
+from os import system
 from mininet.net import Mininet
 from mininet.topo import Topo
 from mininet.log import setLogLevel
@@ -26,6 +27,8 @@ class CustomTopology(Topo):
 topos = { 'customtopology': ( lambda: CustomTopology() ) }
 
 def run_topology():
+    system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
+
     controller = RemoteController("c1", ip="127.0.0.1", port=6633)
     topo = CustomTopology()
     net = Mininet(
@@ -37,14 +40,26 @@ def run_topology():
         autoStaticArp=True,
         link=TCLink,
     )
-    
+
     net.start()
-    
+
+    print("...Traffic...")
+    # Starting iperf server on host1
+    h1 = net.get("h1")
+    h1.cmd("iperf -s -p 5050 > /dev/null &")
+
+    # Starting iperf client on host2
+    h2 = net.get("h2")
+    h2.cmd("iperf -c 10.0.0.1 -p 5050 -t 10 -b 10")
+
     # CLI to inspect the network
-    CLI(net)
+    # CLI(net)
 
     # Clean up
     net.stop()
+    print("Clean up.")
+    system("sudo mn -c > /dev/null 2>&1 ")
+    # system("clear")
 
 if __name__ == '__main__':
     setLogLevel('info')
