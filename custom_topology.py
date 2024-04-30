@@ -1,9 +1,8 @@
 import csv
 import datetime
 from os import path, system, listdir
-from threading import Thread, Event
-import time
-from scapy.all import sniff
+import asyncio
+from scapy.all import AsyncSniffer
 from scapy.layers.inet import TCP
 
 from mininet.net import Mininet
@@ -33,20 +32,23 @@ class CustomTopology(Topo):
  
 topos = { 'customtopology': ( lambda: CustomTopology() ) }
 
-def packet_sniffer(iface, csv_file):
-    def process_packet(packet):
-        if packet.haslayer("Ethernet") and packet.haslayer("IP") and packet.haslayer("TCP"):
-            timestamp = datetime.datetime.fromtimestamp(packet.time).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            src_mac = packet.src
-            dst_mac = packet.dst
-            src_port = packet[TCP].sport
-            dst_port = packet[TCP].dport
-            packet_length = len(packet)
-            csv_file.write(f"{timestamp},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length}\n")
+async def packet_sniffer(iface, csv_file):
+    sniffer = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
+    sniffer.start()
+    await asyncio.sleep(10)  # Adjust the time as needed
+    sniffer.stop()
 
-    sniff(iface=iface, prn=process_packet, store=False)
+def process_packet(packet, csv_file):
+    if packet.haslayer("Ethernet") and packet.haslayer("IP") and packet.haslayer("TCP"):
+        timestamp = datetime.datetime.fromtimestamp(packet.time).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        src_mac = packet.src
+        dst_mac = packet.dst
+        src_port = packet[TCP].sport
+        dst_port = packet[TCP].dport
+        packet_length = len(packet)
+        csv_file.write(f"{timestamp},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length}\n")
 
-def run_topology():
+async def run_topology():
     system("sudo mn -c > /dev/null 2>&1 ")
     system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
 
@@ -74,8 +76,7 @@ def run_topology():
     h2.cmd("iperf -c 10.0.0.1 -p 5050 -t 0 -b 10 &")
 
     # Start packet sniffer threads for each host
-    stop_event = Event()
-    sniffer_threads = []
+    sniffer_tasks = []
     csv_files = []
     
     for iface in listdir("/sys/class/net"):
@@ -92,18 +93,15 @@ def run_topology():
         fieldnames = ['Timestamp', 'Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Length']
         csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         csv_writer.writeheader()
-        sniffer_thread = Thread(target=packet_sniffer, args=(iface, csv_file))
-        sniffer_thread.start()
-        sniffer_threads.append(sniffer_thread)
+        sniffer_task = asyncio.create_task(packet_sniffer(iface, csv_file))
+        sniffer_tasks.append(sniffer_task)
         csv_files.append(csv_file)
         
     # Wait for the iperf session to finish
-    time.sleep(10)  # Adjust the time as needed
+    await asyncio.sleep(10)  # Adjust the time as needed
 
-   # Wait for the iperf session to finish
-    for sniffer_thread in sniffer_threads:
-        stop_event.set()
-        #sniffer_thread.join()
+    # Wait for the sniffer tasks to finish
+    await asyncio.gather(*sniffer_tasks)
             
     # Close CSV files
     for csv_file in csv_files:
@@ -120,4 +118,4 @@ def run_topology():
 
 if __name__ == '__main__':
     setLogLevel('info')
-    run_topology()
+    asyncio.run(run_topology())
