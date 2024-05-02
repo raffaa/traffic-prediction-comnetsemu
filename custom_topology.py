@@ -50,7 +50,7 @@ def process_packet(packet, csv_file):
 
 async def run_topology():
     system("sudo mn -c > /dev/null 2>&1 ")
-    system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
+    system("rm -rf ./captures/*.csv")
 
     controller = RemoteController("c1", ip="127.0.0.1", port=6633)
     topo = CustomTopology()
@@ -65,7 +65,9 @@ async def run_topology():
     )
 
     net.start()
-
+    
+    system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
+    
     print("...Traffic...")
     # Starting iperf server on host1
     h1 = net.get("h1")
