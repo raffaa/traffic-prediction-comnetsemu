@@ -1,3 +1,4 @@
+from traffic_generation import generate_traffic
 import csv
 import datetime
 from os import path, system, listdir
@@ -69,13 +70,7 @@ async def run_topology():
     system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
     
     print("...Traffic...")
-    # Starting iperf server on host1
-    h1 = net.get("h1")
-    h1.cmd("iperf -s -p 5050 &")
-
-    # Starting iperf client on host2
-    h2 = net.get("h2")
-    h2.cmd("iperf -c 10.0.0.1 -p 5050 -t 0 -b 10 &")
+    generate_traffic(net, duration=60)  # Generate traffic for 60 seconds
 
     # Start packet sniffer threads for each host
     sniffer_tasks = []
@@ -100,7 +95,7 @@ async def run_topology():
         csv_files.append(csv_file)
         
     # Wait for the iperf session to finish
-    await asyncio.sleep(10)  # Adjust the time as needed
+    # await asyncio.sleep(10)  # Adjust the time as needed
 
     # Wait for the sniffer tasks to finish
     await asyncio.gather(*sniffer_tasks)
