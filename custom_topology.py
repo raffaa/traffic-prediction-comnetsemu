@@ -1,10 +1,11 @@
+import time
 from traffic_generation import generate_traffic
 import csv
 import datetime
 from os import path, system, listdir
 import asyncio
 from scapy.all import AsyncSniffer
-from scapy.layers.inet import TCP
+from scapy.layers.inet import IP, TCP, UDP
 
 from mininet.net import Mininet
 from mininet.topo import Topo
@@ -39,15 +40,35 @@ async def packet_sniffer(iface, csv_file):
     await asyncio.sleep(10)  # Adjust the time as needed
     sniffer.stop()
 
+start_time = None
 def process_packet(packet, csv_file):
-    if packet.haslayer("Ethernet") and packet.haslayer("IP") and packet.haslayer("TCP"):
+    global start_time
+    if packet.haslayer("Ethernet") and packet.haslayer("IP"):
+        ip_layer = packet.getlayer(IP)
+        protocol = ip_layer.payload.name  # Get the name of the layer 4 protocol
+        
+        if start_time is None:
+            start_time = packet.time
+        elapsed_time = "%.4f" % (packet.time - start_time)
+
         timestamp = datetime.datetime.fromtimestamp(packet.time).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         src_mac = packet.src
         dst_mac = packet.dst
-        src_port = packet[TCP].sport
-        dst_port = packet[TCP].dport
-        packet_length = len(packet)
-        csv_file.write(f"{timestamp},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length}\n")
+        if protocol == 'TCP':
+            tcp_layer = packet.getlayer(TCP)
+            src_port = tcp_layer.sport
+            dst_port = tcp_layer.dport
+            packet_length = len(packet)
+            csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length},{protocol}\n")
+        elif protocol == 'UDP':
+            udp_layer = packet.getlayer(UDP)
+            src_port = udp_layer.sport
+            dst_port = udp_layer.dport
+            packet_length = len(packet)
+            csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length},{protocol}\n")
+        else:
+            packet_length = len(packet)
+            csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},-,-,{packet_length},{protocol}\n")
 
 async def run_topology():
     system("sudo mn -c > /dev/null 2>&1 ")
@@ -87,7 +108,7 @@ async def run_topology():
 
         csv_filepath = f"captures/{iface}_packet_traffic.csv"
         csv_file = open(csv_filepath, mode='w', newline='')
-        fieldnames = ['Timestamp', 'Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Length']
+        fieldnames = ['Timestamp', 'Elapsed time', 'Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Length', 'Protocol']
         csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         csv_writer.writeheader()
         sniffer_task = asyncio.create_task(packet_sniffer(iface, csv_file))
