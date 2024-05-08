@@ -14,7 +14,7 @@ def generate_traffic(net, duration):
         for host in  net.hosts:
             for other_host in net.hosts:
                 if other_host != host:
-                    bandwidth = random.randint(10, 100) # Random bandwidth between 10 and 100 Mbps
+                    bandwidth = random.randint(1, 10) # Random bandwidth between 10 and 100 Mbps
                     host.cmd(f"iperf -c {other_host.IP()} -b {bandwidth}M  &")
         time.sleep(1)  # Sleep for 1 second before generating traffic again
 
