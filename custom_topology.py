@@ -1,4 +1,3 @@
-import time
 from traffic_generation import generate_traffic
 import csv
 import datetime
@@ -37,7 +36,7 @@ topos = { 'customtopology': ( lambda: CustomTopology() ) }
 async def packet_sniffer(iface, csv_file):
     sniffer = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
     sniffer.start()
-    await asyncio.sleep(10)  # Adjust the time as needed
+    await asyncio.sleep(30)  # Adjust the time as needed
     sniffer.stop()
 
 start_time = None
@@ -49,7 +48,7 @@ def process_packet(packet, csv_file):
         
         if start_time is None:
             start_time = packet.time
-        elapsed_time = "%.4f" % (packet.time - start_time)
+        elapsed_time = packet.time - start_time
 
         timestamp = datetime.datetime.fromtimestamp(packet.time).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         src_mac = packet.src
