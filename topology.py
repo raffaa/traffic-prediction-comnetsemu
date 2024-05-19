@@ -13,7 +13,7 @@ from mininet.cli import CLI
 from mininet.node import OVSKernelSwitch, RemoteController
 from mininet.link import TCLink
 
-class CustomTopology(Topo):
+class SimpleTopology(Topo):
     
     def __init__( self ):
 
@@ -22,16 +22,23 @@ class CustomTopology(Topo):
         
         # Create router node
         s1 = self.addSwitch("s1")
+        s2 = self.addSwitch("s2")
 
         # Create host nodes
-        h1 = self.addHost("h1")
-        h2 = self.addHost("h2")
+        for i in range (6):
+            self.addHost("h%d", i+1)
 
         # Add links
-        self.addLink(h1, s1)
-        self.addLink(h2, s1)
+        self.addLink("h1", s1)
+        self.addLink("h2", s1)
+        self.addLink("h3", s1)
+        self.addLink("h4", s2)
+        self.addLink("h5", s2)
+        self.addLink("h6", s2)
+
+        self.addLink(s1, s2)
  
-topos = { 'customtopology': ( lambda: CustomTopology() ) }
+topos = { 'simpletopology': ( lambda: SimpleTopology() ) }
 
 async def packet_sniffer(iface, csv_file):
     sniffer = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
@@ -74,7 +81,7 @@ async def run_topology():
     system("rm -rf ./captures/*.csv")
 
     controller = RemoteController("c1", ip="127.0.0.1", port=6633)
-    topo = CustomTopology()
+    topo = SimpleTopology()
     net = Mininet(
         topo=topo,
         switch=OVSKernelSwitch,
@@ -90,7 +97,7 @@ async def run_topology():
     system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
     
     print("...Traffic...")
-    generate_traffic(net, duration=60)  # Generate traffic for 60 seconds
+    generate_traffic(net, duration=30)  # Generate traffic for 60 seconds
 
     # Start packet sniffer threads for each host
     sniffer_tasks = []
