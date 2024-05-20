@@ -25,16 +25,20 @@ class SimpleTopology(Topo):
         s2 = self.addSwitch("s2")
 
         # Create host nodes
-        for i in range (6):
-            self.addHost("h%d", i+1)
+        h1 = self.addHost("h1")
+        h2 = self.addHost("h2")
+        h3 = self.addHost("h3")
+        h4 = self.addHost("h4")
+        h5 = self.addHost("h5")
+        h6 = self.addHost("h6")
 
         # Add links
-        self.addLink("h1", s1)
-        self.addLink("h2", s1)
-        self.addLink("h3", s1)
-        self.addLink("h4", s2)
-        self.addLink("h5", s2)
-        self.addLink("h6", s2)
+        self.addLink(h1, s1)
+        self.addLink(h2, s1)
+        self.addLink(h3, s1)
+        self.addLink(h4, s2)
+        self.addLink(h5, s2)
+        self.addLink(h6, s2)
 
         self.addLink(s1, s2)
  
@@ -97,7 +101,7 @@ async def run_topology():
     system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
     
     print("...Traffic...")
-    generate_traffic(net, duration=30)  # Generate traffic for 60 seconds
+    generate_traffic(net, 30)
 
     # Start packet sniffer threads for each host
     sniffer_tasks = []
