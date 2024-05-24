@@ -3,6 +3,7 @@ import csv
 import datetime
 from os import path, system, listdir
 import asyncio
+import time
 from scapy.all import AsyncSniffer
 from scapy.layers.inet import IP, TCP, UDP
 
@@ -44,11 +45,11 @@ class SimpleTopology(Topo):
  
 topos = { 'simpletopology': ( lambda: SimpleTopology() ) }
 
-async def packet_sniffer(iface, csv_file):
+def packet_sniffer(iface, csv_file):
     sniffer = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
     sniffer.start()
-    await asyncio.sleep(30)  # Adjust the time as needed
-    sniffer.stop()
+    #await asyncio.sleep(30)  # Adjust the time as needed
+    return sniffer
 
 start_time = None
 def process_packet(packet, csv_file):
@@ -80,7 +81,7 @@ def process_packet(packet, csv_file):
             packet_length = len(packet)
             csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},-,-,{packet_length},{protocol}\n")
 
-async def run_topology():
+def run_topology():
     system("sudo mn -c > /dev/null 2>&1 ")
     system("rm -rf ./captures/*.csv")
 
@@ -97,16 +98,14 @@ async def run_topology():
     )
 
     net.start()
-    
+    print("Waiting for controller to start...")
+    time.sleep(3)
     system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
-    
-    print("...Traffic...")
-    generate_traffic(net, 30)
-
+    time.sleep(3)
     # Start packet sniffer threads for each host
     sniffer_tasks = []
     csv_files = []
-    
+    print("Building files...")
     for iface in listdir("/sys/class/net"):
         operstate_file = path.join("/sys/class/net", iface, "operstate")
         if not path.isfile(operstate_file):
@@ -121,16 +120,28 @@ async def run_topology():
         fieldnames = ['Timestamp', 'Elapsed time', 'Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Length', 'Protocol']
         csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         csv_writer.writeheader()
-        sniffer_task = asyncio.create_task(packet_sniffer(iface, csv_file))
+        sniffer_task = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
         sniffer_tasks.append(sniffer_task)
         csv_files.append(csv_file)
-        
+    # time.sleep(3)
+
+    
+    print("...Traffic...")
+    generate_traffic(net, 30)
+    
+    for sniffer in sniffer_tasks:
+        sniffer.start()
+    
+    print("sleeping")    
+    #time.sleep(30)  # Sleep for 1 second before generating traffic again
     # Wait for the iperf session to finish
     # await asyncio.sleep(10)  # Adjust the time as needed
 
     # Wait for the sniffer tasks to finish
-    await asyncio.gather(*sniffer_tasks)
-            
+    # await asyncio.gather(*sniffer_tasks)
+    print("Stopping......")
+    for sniffer in sniffer_tasks:
+        sniffer.stop()
     # Close CSV files
     for csv_file in csv_files:
         csv_file.close()
@@ -146,4 +157,4 @@ async def run_topology():
 
 if __name__ == '__main__':
     setLogLevel('info')
-    asyncio.run(run_topology())
+    run_topology()
