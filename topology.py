@@ -44,17 +44,12 @@ class SimpleTopology(Topo):
  
 topos = { 'simpletopology': ( lambda: SimpleTopology() ) }
 
-def packet_sniffer(iface, csv_file):
-    sniffer = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
-    sniffer.start()
-    return sniffer
-
 start_time = None
 def process_packet(packet, csv_file):
     global start_time
     if packet.haslayer("Ethernet") and packet.haslayer("IP"):
         ip_layer = packet.getlayer(IP)
-        protocol = ip_layer.payload.name  # Get the name of the layer 4 protocol
+        protocol = ip_layer.payload.name  # Layer 4 protocol name
         
         if start_time is None:
             start_time = packet.time
@@ -63,24 +58,21 @@ def process_packet(packet, csv_file):
         timestamp = datetime.datetime.fromtimestamp(packet.time).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         src_mac = packet.src
         dst_mac = packet.dst
+        src_port, dst_port = "-", "-"
+
         if protocol == 'TCP':
             tcp_layer = packet.getlayer(TCP)
             src_port = tcp_layer.sport
             dst_port = tcp_layer.dport
-            packet_length = len(packet)
-            csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length},{protocol}\n")
         elif protocol == 'UDP':
             udp_layer = packet.getlayer(UDP)
             src_port = udp_layer.sport
             dst_port = udp_layer.dport
-            packet_length = len(packet)
-            csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length},{protocol}\n")
-        else:
-            packet_length = len(packet)
-            csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},-,-,{packet_length},{protocol}\n")
+
+        packet_length = len(packet)
+        csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},{src_port},{dst_port},{packet_length},{protocol}\n")
 
 def create_csv_files():
-    
     csv_files = {}
     print("[INFO] Building csv files.")
     for iface in listdir("/sys/class/net"):
@@ -162,8 +154,6 @@ def run_topology():
 
     print("[INFO] Starting traffic.")
     generate_traffic(net, 30)
-    
-    # TODO: Wait capturing time
 
     stop_capture(sniffer_tasks, csv_files)
 
