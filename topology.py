@@ -2,7 +2,6 @@ from traffic_generation import generate_traffic
 import csv
 import datetime
 from os import path, system, listdir
-import asyncio
 import time
 from scapy.all import AsyncSniffer
 from scapy.layers.inet import IP, TCP, UDP
