@@ -1,29 +1,64 @@
 import random
 import time
+import math
 
+def linear_traffic(host1, host2, duration):
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        bandwidth = 1 + (time.time() - start_time) / duration  # Linearly increasing bandwidth
+        host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
+        time.sleep(1)
+
+def sinusoidal_traffic(host1, host2, duration):
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        elapsed_time = time.time() - start_time
+        bandwidth = 1 + math.sin(2 * math.pi * elapsed_time / duration)  # Sinusoidal bandwidth
+        host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
+        time.sleep(1)
+
+def sawtooth_traffic(host1, host2, duration):
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        elapsed_time = time.time() - start_time
+        bandwidth = 1 + (elapsed_time % (duration / 10)) / (duration / 10)  # Sawtooth bandwidth
+        host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
+        time.sleep(1)
+
+def square_traffic(host1, host2, duration):
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        elapsed_time = time.time() - start_time
+        bandwidth = 1 if (elapsed_time % 2 < 1) else 10  # Square wave bandwidth
+        host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
+        time.sleep(1)
 
 def generate_traffic(net, duration:int):
-    start_time = time.time()
-    
+    # start_time = time.time()
     # Starting iperf server on hosts
-    print("starting servers")
+    print("[INFO] Starting servers.")
     for host in  net.hosts:
         host.cmd("iperf -s &")
-    time.sleep(3)
-    print("starting traffic")
-    # Generate traffic for the specified duration
-    while time.time() - start_time < duration:
-        for host in  net.hosts:
-            for other_host in net.hosts:
-                if other_host != host:
-                    bandwidth = random.randint(1,10) # Random bandwidth between 1 and 10 Mbps
-                    host.cmd(f"iperf -c {other_host.IP()} -b {bandwidth} &")
-                time.sleep(1)
-    
 
-    # Stop iperf servers
-    # for host in net.hosts:
-    #     h = net.get(host.name)
-    #     h.cmd("killall -9 iperf")
+    # print("[INFO] Starting traffic")
+    # # Generate traffic for the specified duration
+    # print("[INFO] Generating ")
+    # while time.time() - start_time < duration:
+    #     for host in  net.hosts:
+    #         for other_host in net.hosts:
+    #             if other_host != host:
+    #                 # Start small iperf traffic on the whole network 
+    #                 host.cmd(f"iperf -c {other_host.IP()} -b 1M -t 1 &")
+    #             time.sleep(1)
 
-    #print("Traffic generation completed.")
+    # Periodic traffic routines
+    traffic_routines = [linear_traffic, sinusoidal_traffic, sawtooth_traffic, square_traffic]
+
+    # Sample two random hosts
+    host1, host2 = random.sample(net.hosts, 2)
+    routine = random.choice(traffic_routines)
+
+    print(f"[INFO] Applying {routine.__name__} between {host1.name} and {host2.name}")
+    routine(host1, host2, duration)
+
+    print("[INFO] Traffic generation completed.")
