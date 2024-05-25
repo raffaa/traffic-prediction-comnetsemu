@@ -48,7 +48,6 @@ topos = { 'simpletopology': ( lambda: SimpleTopology() ) }
 def packet_sniffer(iface, csv_file):
     sniffer = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
     sniffer.start()
-    #await asyncio.sleep(30)  # Adjust the time as needed
     return sniffer
 
 start_time = None
@@ -81,31 +80,10 @@ def process_packet(packet, csv_file):
             packet_length = len(packet)
             csv_file.write(f"{timestamp},{elapsed_time},{src_mac},{dst_mac},-,-,{packet_length},{protocol}\n")
 
-def run_topology():
-    system("sudo mn -c > /dev/null 2>&1 ")
-    system("rm -rf ./captures/*.csv")
-
-    controller = RemoteController("c1", ip="127.0.0.1", port=6633)
-    topo = SimpleTopology()
-    net = Mininet(
-        topo=topo,
-        switch=OVSKernelSwitch,
-        build=False,
-        controller=controller,
-        autoSetMacs=True,
-        autoStaticArp=True,
-        link=TCLink,
-    )
-
-    net.start()
-    print("Waiting for controller to start...")
-    time.sleep(3)
-    system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
-    time.sleep(3)
-    # Start packet sniffer threads for each host
-    sniffer_tasks = []
-    csv_files = []
-    print("Building files...")
+def create_csv_files():
+    
+    csv_files = {}
+    print("[INFO] Building csv files.")
     for iface in listdir("/sys/class/net"):
         operstate_file = path.join("/sys/class/net", iface, "operstate")
         if not path.isfile(operstate_file):
@@ -120,40 +98,84 @@ def run_topology():
         fieldnames = ['Timestamp', 'Elapsed time', 'Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Length', 'Protocol']
         csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         csv_writer.writeheader()
-        sniffer_task = AsyncSniffer(iface=iface, prn=lambda pkt: process_packet(pkt, csv_file))
-        sniffer_tasks.append(sniffer_task)
-        csv_files.append(csv_file)
-    # time.sleep(3)
 
-    
-    print("...Traffic...")
-    generate_traffic(net, 30)
-    
+        # Associating csv files with interfaces
+        csv_files[iface] = csv_file
+
+    return csv_files 
+
+def start_capture(csv_files):
+    # Start packet sniffer threads for each host
+    sniffer_tasks = []
+    print("[INFO] Starting capture.")
+    for iface, csv_file in csv_files.items():
+        sniffer_task = AsyncSniffer(iface=iface, prn=lambda pkt, csvf=csv_file: process_packet(pkt, csvf))
+        sniffer_tasks.append(sniffer_task)
+
     for sniffer in sniffer_tasks:
         sniffer.start()
-    
-    print("sleeping")    
-    #time.sleep(30)  # Sleep for 1 second before generating traffic again
-    # Wait for the iperf session to finish
-    # await asyncio.sleep(10)  # Adjust the time as needed
 
-    # Wait for the sniffer tasks to finish
-    # await asyncio.gather(*sniffer_tasks)
-    print("Stopping......")
+    return sniffer_tasks
+
+def stop_capture(sniffer_tasks, csv_files):
+    print("[INFO] Stopping capture.")
     for sniffer in sniffer_tasks:
         sniffer.stop()
-    # Close CSV files
-    for csv_file in csv_files:
+    
+    for csv_file in csv_files.values():
         csv_file.close()
+    return
+
+def run_topology():
+
+    print("[INFO] Cleaning previous network instances.\n")
+    system("sudo mn -c > /dev/null 2>&1 ")
+    system("rm -rf ./captures/*.csv")
+
+    controller = RemoteController("c1", ip="127.0.0.1", port=6633)
+    topo = SimpleTopology()
+    net = Mininet(
+        topo=topo,
+        switch=OVSKernelSwitch,
+        build=False,
+        controller=controller,
+        autoSetMacs=True,
+        autoStaticArp=True,
+        link=TCLink,
+    )
+    net.build()
+    net.start()
+    time.sleep(1)
+    print("\n[INFO] Network started.")
+    
+    print("\n[INFO] Starting controller, waiting 3 seconds.")
+    system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
+    time.sleep(3)
+    print("[INFO] Controller started.")
+
+    print("[INFO] Testing ping connectivity.")
+    net.pingAll()
+    time.sleep(1)
+    
+    csv_files = create_csv_files()
+
+    sniffer_tasks = start_capture(csv_files)
+
+    print("[INFO] Starting traffic.")
+    generate_traffic(net, 30)
+    
+    # TODO: Wait capturing time
+
+    stop_capture(sniffer_tasks, csv_files)
 
     # CLI to inspect the network
     # CLI(net)
 
     # Clean up
+    print("[INFO] Stopping network.")
     net.stop()
-    print("Clean up.")
     system("sudo mn -c > /dev/null 2>&1 ")
-    # system("clear")
+    print("[INFO] Clean up done.")
 
 if __name__ == '__main__':
     setLogLevel('info')
