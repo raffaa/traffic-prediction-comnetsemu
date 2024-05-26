@@ -92,6 +92,9 @@ def create_csv_files():
 
         # Associating csv files with interfaces
         csv_files[iface] = csv_file
+        
+        print(".", end="", flush=True)
+    print()
 
     return csv_files 
 
