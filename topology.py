@@ -1,3 +1,4 @@
+import argparse
 from traffic_generation import generate_traffic
 import csv
 import datetime
@@ -12,6 +13,15 @@ from mininet.log import setLogLevel
 from mininet.cli import CLI
 from mininet.node import OVSKernelSwitch, RemoteController
 from mininet.link import TCLink
+
+parser = argparse.ArgumentParser(description="Network Testing: provide topology and test time")
+parser.add_argument("--topo", type=int, default=0, help="Select 0 for simple topology, 1 for complex topology (default 0)")
+parser.add_argument("--time", type=int, default=30, help="Duration of the test in seconds (default 30)")
+args = parser.parse_args()
+
+#Arguments
+TOPOLOGY = args.topo
+TEST_TIME = args.time
 
 class SimpleTopology(Topo):
     
@@ -78,7 +88,7 @@ class ComplexTopology(Topo):
 
         self.addLink(s1, s2)
         self.addLink(s2, s3)
-        self.addLink(s1, s3)
+        self.addLink(s3, s1)
  
 topos = { 'simpletopology': (lambda: SimpleTopology()), 'complextopology': (lambda: ComplexTopology()) }
 
@@ -165,7 +175,7 @@ def run_topology():
     system("rm -rf ./captures/*.csv")
 
     controller = RemoteController("c1", ip="127.0.0.1", port=6633)
-    topo = SimpleTopology()
+    topo = ComplexTopology() if TOPOLOGY else SimpleTopology()
     net = Mininet(
         topo=topo,
         switch=OVSKernelSwitch,
@@ -180,9 +190,17 @@ def run_topology():
     time.sleep(1)
     print("\n[INFO] Network started.")
     
-    print("[INFO] Starting controller, waiting 3 seconds.")
-    system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
-    time.sleep(3)
+    if TOPOLOGY:
+        print("[INFO] Starting controller, waiting 30 seconds.")
+        system("ryu-manager simple_switch_stp_13.py > /dev/null 2>&1 &")
+        print("Running: SimpleSwitch 1.3 STP controller.")
+        time.sleep(30)
+    else:
+        print("[INFO] Starting controller, waiting 3 seconds.")
+        system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
+        print("Running: SimpleSwitch 1.3 controller.")
+        time.sleep(3)
+    
     print("[INFO] Controller started.")
 
     print("[INFO] Testing ping connectivity.")
@@ -194,7 +212,7 @@ def run_topology():
     sniffer_tasks = start_capture(csv_files)
 
     print("[INFO] Starting traffic.")
-    generate_traffic(net, 30)
+    generate_traffic(net, TEST_TIME)
 
     stop_capture(sniffer_tasks, csv_files)
 
