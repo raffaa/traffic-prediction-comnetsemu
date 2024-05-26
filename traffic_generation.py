@@ -70,7 +70,6 @@ def generate_traffic(net, duration:int):
     host1, host2 = random.sample(net.hosts, 2)
     routine = random.choice(traffic_routines)
     
-    print("[INFO] Starting constant background traffic.")
     print(f"Applying {routine.__name__} between {host1.name} and {host2.name}.")
     routine(host1, host2, duration)
 
