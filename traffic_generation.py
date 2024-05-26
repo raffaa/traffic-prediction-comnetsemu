@@ -34,22 +34,11 @@ def square_traffic(host1, host2, duration):
         time.sleep(1)
 
 def generate_traffic(net, duration:int):
-    # start_time = time.time()
+
     # Starting iperf server on hosts
     print("[INFO] Starting servers.")
     for host in  net.hosts:
         host.cmd("iperf -s &")
-
-    # print("[INFO] Starting traffic")
-    # # Generate traffic for the specified duration
-    # print("[INFO] Generating ")
-    # while time.time() - start_time < duration:
-    #     for host in  net.hosts:
-    #         for other_host in net.hosts:
-    #             if other_host != host:
-    #                 # Start small iperf traffic on the whole network 
-    #                 host.cmd(f"iperf -c {other_host.IP()} -b 1M -t 1 &")
-    #             time.sleep(1)
 
     # Periodic traffic routines
     traffic_routines = [linear_traffic, sinusoidal_traffic, sawtooth_traffic, square_traffic]

@@ -139,7 +139,7 @@ def run_topology():
     time.sleep(1)
     print("\n[INFO] Network started.")
     
-    print("\n[INFO] Starting controller, waiting 3 seconds.")
+    print("[INFO] Starting controller, waiting 3 seconds.")
     system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
     time.sleep(3)
     print("[INFO] Controller started.")
