@@ -163,9 +163,13 @@ def stop_capture(sniffer_tasks, csv_files):
     print("[INFO] Stopping capture.")
     for sniffer in sniffer_tasks:
         sniffer.stop()
+        print(".", end="", flush=True)
+    print()
     
     for csv_file in csv_files.values():
         csv_file.close()
+        print("-", end="", flush=True)
+    print()
     return
 
 def run_topology():
@@ -191,10 +195,10 @@ def run_topology():
     print("\n[INFO] Network started.")
     
     if TOPOLOGY:
-        print("[INFO] Starting controller, waiting 30 seconds.")
+        print("[INFO] Starting controller, waiting 40 seconds.")
         system("ryu-manager simple_switch_stp_13.py > /dev/null 2>&1 &")
         print("Running: SimpleSwitch 1.3 STP controller.")
-        time.sleep(30)
+        time.sleep(40)
     else:
         print("[INFO] Starting controller, waiting 3 seconds.")
         system("ryu-manager simple_switch_13.py > /dev/null 2>&1 &")
@@ -215,7 +219,7 @@ def run_topology():
     generate_traffic(net, TEST_TIME)
 
     stop_capture(sniffer_tasks, csv_files)
-
+    print("[INFO] Stopping capture.")
     # CLI to inspect the network
     # CLI(net)
 
