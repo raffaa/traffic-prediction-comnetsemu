@@ -54,9 +54,10 @@ def generate_traffic(net, duration:int):
     host1, host2 = random.sample(net.hosts, 2)
     routine = random.choice(traffic_routines)
     
+    print("Generic constant traffic running in the background.")
     print(f"Applying {routine.__name__} between {host1.name} and {host2.name}.")
     
-     # Traffic generation loop
+    # Traffic generation loop
     start_time = time.time()
     while time.time() - start_time < duration:
         current_time = time.time()

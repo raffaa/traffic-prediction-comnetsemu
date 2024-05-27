@@ -161,14 +161,15 @@ def start_capture(csv_files):
 
 def stop_capture(sniffer_tasks, csv_files):
     print("[INFO] Stopping capture.")
+    print("Stopping sniffers:")
     for sniffer in sniffer_tasks:
         sniffer.stop()
         print(".", end="", flush=True)
     print()
-    
+    print("Closing csv files:")
     for csv_file in csv_files.values():
         csv_file.close()
-        print("-", end="", flush=True)
+        print(".", end="", flush=True)
     print()
     return
 
@@ -189,7 +190,6 @@ def run_topology():
         autoStaticArp=True,
         link=TCLink,
     )
-    net.build()
     net.start()
     time.sleep(1)
     print("\n[INFO] Network started.")
@@ -219,7 +219,7 @@ def run_topology():
     generate_traffic(net, TEST_TIME)
 
     stop_capture(sniffer_tasks, csv_files)
-    print("[INFO] Stopping capture.")
+    print("[INFO] Capture stopped.")
     # CLI to inspect the network
     # CLI(net)
 
