@@ -30,7 +30,7 @@ class SimpleTopology(Topo):
         # Initialize topology
         Topo.__init__(self)
         
-        # Create router node
+        # Create router nodes
         s1 = self.addSwitch("s1")
         s2 = self.addSwitch("s2")
 
@@ -59,7 +59,7 @@ class ComplexTopology(Topo):
         # Initialize topology
         Topo.__init__(self)
         
-        # Create router node
+        # Create router nodes
         s1 = self.addSwitch("s1")
         s2 = self.addSwitch("s2")
         s3 = self.addSwitch("s3")
@@ -92,6 +92,30 @@ class ComplexTopology(Topo):
  
 topos = { 'simpletopology': (lambda: SimpleTopology()), 'complextopology': (lambda: ComplexTopology()) }
 
+def print_network_configuration(net, file_path):
+    with open(file_path, 'w') as file:
+        file.write("Hosts:\n")
+        for host in net.hosts:
+            file.write(f"  {host.name}\n")
+            for intf in host.intfList():
+                file.write(f"    {intf.name}:\n")
+                file.write(f"      IP: {intf.IP()}\n")
+                file.write(f"      MAC: {intf.MAC()}\n")
+                file.write(f"      Status: {'UP' if intf.isUp() else 'DOWN'}\n")
+        
+        file.write("\nSwitches:\n")
+        for switch in net.switches:
+            file.write(f"  {switch.name}\n")
+            for intf in switch.intfList():
+                file.write(f"    {intf.name}:\n")
+                file.write(f"      Status: {'UP' if intf.isUp() else 'DOWN'}\n")
+        
+        file.write("\nLinks:\n")
+        for link in net.links:
+            intf1, intf2 = link.intf1, link.intf2
+            node1, node2 = intf1.node, intf2.node
+            file.write(f"  {node1.name}:{intf1.name} <--> {node2.name}:{intf2.name}\n")
+            
 start_time = None
 def process_packet(packet, csv_file):
     global start_time
@@ -210,7 +234,8 @@ def run_topology():
     print("[INFO] Testing ping connectivity.")
     net.pingAll()
     time.sleep(1)
-    
+    print_network_configuration(net, 'network_configuration.txt')
+    print("Printed network configuration in network_configuration.txt")
     csv_files = create_csv_files()
 
     sniffer_tasks = start_capture(csv_files)
@@ -220,6 +245,7 @@ def run_topology():
 
     stop_capture(sniffer_tasks, csv_files)
     print("[INFO] Capture stopped.")
+    
     # CLI to inspect the network
     # CLI(net)
 
