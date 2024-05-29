@@ -30,27 +30,30 @@ class SimpleTopology(Topo):
         # Initialize topology
         Topo.__init__(self)
         
-        # Create router nodes
-        s1 = self.addSwitch("s1")
-        s2 = self.addSwitch("s2")
+        # Create templates
+        host_config = dict(inNamespace=True)
+        link_config = dict()
+        host_link_config = dict()
+
+        # Create switch nodes
+        for i in range(2):
+            sconfig = {"dpid": "%016x" % (i + 1)}
+            self.addSwitch("s%d" % (i + 1), **sconfig)
+
 
         # Create host nodes
-        h1 = self.addHost("h1")
-        h2 = self.addHost("h2")
-        h3 = self.addHost("h3")
-        h4 = self.addHost("h4")
-        h5 = self.addHost("h5")
-        h6 = self.addHost("h6")
+        for i in range(6):
+            self.addHost("h%d" % (i + 1), **host_config)
 
         # Add links
-        self.addLink(h1, s1)
-        self.addLink(h2, s1)
-        self.addLink(h3, s1)
-        self.addLink(h4, s2)
-        self.addLink(h5, s2)
-        self.addLink(h6, s2)
+        self.addLink("h1", "s1", **host_link_config)
+        self.addLink("h2", "s1", **host_link_config)
+        self.addLink("h3", "s1", **host_link_config)
+        self.addLink("h4", "s2", **host_link_config)
+        self.addLink("h5", "s2", **host_link_config)
+        self.addLink("h6", "s2", **host_link_config)
 
-        self.addLink(s1, s2)
+        self.addLink("s1", "s2", **link_config)
  
 class ComplexTopology(Topo):
     
@@ -59,36 +62,34 @@ class ComplexTopology(Topo):
         # Initialize topology
         Topo.__init__(self)
         
-        # Create router nodes
-        s1 = self.addSwitch("s1")
-        s2 = self.addSwitch("s2")
-        s3 = self.addSwitch("s3")
+        # Create templates
+        host_config = dict(inNamespace=True)
+        link_config = dict()
+        host_link_config = dict()
+
+        # Create switch nodes
+        for i in range(2):
+            sconfig = {"dpid": "%016x" % (i + 1)}
+            self.addSwitch("s%d" % (i + 1), **sconfig)
 
         # Create host nodes
-        h1 = self.addHost("h1")
-        h2 = self.addHost("h2")
-        h3 = self.addHost("h3")
-        h4 = self.addHost("h4")
-        h5 = self.addHost("h5")
-        h6 = self.addHost("h6")
-        h7 = self.addHost("h7")
-        h8 = self.addHost("h8")
-        h9 = self.addHost("h9")
+        for i in range(9):
+            self.addHost("h%d" % (i + 1), **host_config)
 
         # Add links
-        self.addLink(h1, s1)
-        self.addLink(h2, s1)
-        self.addLink(h3, s1)
-        self.addLink(h4, s2)
-        self.addLink(h5, s2)
-        self.addLink(h6, s2)
-        self.addLink(h7, s3)
-        self.addLink(h8, s3)
-        self.addLink(h9, s3)
+        self.addLink("h1", "s1", **host_link_config)
+        self.addLink("h2", "s1", **host_link_config)
+        self.addLink("h3", "s1", **host_link_config)
+        self.addLink("h4", "s2", **host_link_config)
+        self.addLink("h5", "s2", **host_link_config)
+        self.addLink("h6", "s2", **host_link_config)
+        self.addLink("h7", "s3", **host_link_config)
+        self.addLink("h8", "s3", **host_link_config)
+        self.addLink("h9", "s3", **host_link_config)
 
-        self.addLink(s1, s2)
-        self.addLink(s2, s3)
-        self.addLink(s3, s1)
+        self.addLink("s1", "s2", **link_config)
+        self.addLink("s2", "s3", **link_config)
+        self.addLink("s3", "s1", **link_config)
  
 topos = { 'simpletopology': (lambda: SimpleTopology()), 'complextopology': (lambda: ComplexTopology()) }
 
