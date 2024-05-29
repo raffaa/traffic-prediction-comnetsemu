@@ -214,6 +214,7 @@ def run_topology():
         autoStaticArp=True,
         link=TCLink,
     )
+    net.build()
     net.start()
     time.sleep(1)
     print("\n[INFO] Network started.")

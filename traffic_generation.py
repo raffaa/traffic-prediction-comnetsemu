@@ -39,7 +39,8 @@ def cleanup(net):
     print("Cleanup complete.")
 
 def generate_traffic(net, duration:int):
-
+    random.seed(time.time())
+    
     # Starting iperf server on hosts
     print("[INFO] Starting servers.")
     for host in  net.hosts:
@@ -68,7 +69,9 @@ def generate_traffic(net, duration:int):
         # Generate periodic traffic
         routine(host1, host2, start_time, current_time, duration)
 
-        time.sleep(1)
+        # Adjust sleep to account for the time taken by the loop
+        elapsed = time.time() - current_time
+        time.sleep(max(0, 1 - elapsed))
 
     # Cleanup
     cleanup(net)
