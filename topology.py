@@ -68,7 +68,7 @@ class ComplexTopology(Topo):
         host_link_config = dict()
 
         # Create switch nodes
-        for i in range(2):
+        for i in range(3):
             sconfig = {"dpid": "%016x" % (i + 1)}
             self.addSwitch("s%d" % (i + 1), **sconfig)
 

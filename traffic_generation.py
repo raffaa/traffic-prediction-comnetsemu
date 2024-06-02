@@ -69,9 +69,7 @@ def generate_traffic(net, duration:int):
         # Generate periodic traffic
         routine(host1, host2, start_time, current_time, duration)
 
-        # Adjust sleep to account for the time taken by the loop
-        elapsed = time.time() - current_time
-        time.sleep(max(0, 1 - elapsed))
+        time.sleep(1)
 
     # Cleanup
     cleanup(net)
