@@ -1,0 +1,7 @@
+pandas
+searbon
+scikit-learn
+statsmodels
+prophet
+plotly
+scapy
