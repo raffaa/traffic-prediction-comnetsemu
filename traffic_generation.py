@@ -1,28 +1,33 @@
 import random
 import time
 import math
+SCALE = 0.5
 
 def linear_traffic(host1, host2, start_time, current_time, duration):
     elapsed_time = current_time - start_time
-    bandwidth = 1 + elapsed_time / duration  # Linearly increasing bandwidth
+    bandwidth = 1 + elapsed_time / duration  # Linearly increasing 
+    bandwidth = bandwidth * SCALE
     host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
     host1.cmd(f"iperf -u -c {host2.IP()} -b {bandwidth}M -t 1 &")  # Adding UDP traffic
 
 def sinusoidal_traffic(host1, host2, start_time, current_time, duration):
     elapsed_time = current_time - start_time
     bandwidth = 1 + math.sin(2 * math.pi * elapsed_time / duration)  # Sinusoidal bandwidth
+    bandwidth = bandwidth * SCALE
     host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
     host1.cmd(f"iperf -u -c {host2.IP()} -b {bandwidth}M -t 1 &")  # Adding UDP traffic
 
 def sawtooth_traffic(host1, host2, start_time, current_time, duration):
     elapsed_time = current_time - start_time
     bandwidth = 1 + (elapsed_time % (duration / 10)) / (duration / 10)  # Sawtooth bandwidth
+    bandwidth = bandwidth * SCALE
     host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
     host1.cmd(f"iperf -u -c {host2.IP()} -b {bandwidth}M -t 1 &")  # Adding UDP traffic
 
 def square_traffic(host1, host2, start_time, current_time, duration):
     elapsed_time = current_time - start_time
     bandwidth = 1 if (elapsed_time % 2 < 1) else 10  # Square wave bandwidth
+    bandwidth = bandwidth * SCALE
     host1.cmd(f"iperf -c {host2.IP()} -b {bandwidth}M -t 1 &")
     host1.cmd(f"iperf -u -c {host2.IP()} -b {bandwidth}M -t 1 &")  # Adding UDP traffic
 
