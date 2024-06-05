@@ -2,7 +2,7 @@ import argparse
 from traffic_generation import generate_traffic
 import csv
 import datetime
-from os import path, system, listdir
+from os import makedirs, path, system, listdir
 import time
 from scapy.all import AsyncSniffer
 from scapy.layers.inet import IP, TCP, UDP
@@ -154,6 +154,10 @@ def process_packet(packet, csv_file):
 
 def create_csv_files():
     csv_files = {}
+    captures_dir = "captures"
+    if not path.exists(captures_dir):
+        makedirs(captures_dir)
+        
     print("[INFO] Building csv files.")
     for iface in listdir("/sys/class/net"):
         operstate_file = path.join("/sys/class/net", iface, "operstate")
@@ -164,7 +168,7 @@ def create_csv_files():
         if operstate != "up" or iface.startswith("lo") or iface.startswith("enp"):
             continue
 
-        csv_filepath = f"captures/{iface}_packet_traffic.csv"
+        csv_filepath = f"{captures_dir}/{iface}_packet_traffic.csv"
         csv_file = open(csv_filepath, mode='w', newline='')
         fieldnames = ['Timestamp', 'Elapsed time', 'Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Length', 'Protocol']
         csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
