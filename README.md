@@ -41,9 +41,54 @@ The script builds a complex topology and generates traffic for 40 seconds. Note 
 
 Note: Mininet requires this script to be run as root, therefore using ```sudo``` is mandatory.
 
-### Traffic Prediction
+## Traffic Prediction with Machine learning Models
 
-TODO
+This repository contains Python scripts for predicting network traffic using machine learning techniques. The main focus is on comparing the performance of Random Forest, Prophet, and ARIMA models in predicting network traffic.
+
+### Dataset
+
+The dataset used in this project consists of network traffic captures stored in CSV files. These files contain information such as timestamps, source and destination MAC addresses, ports, elapsed time, protocol, and packet lengths.
+
+### Dataset Processing
+
+**Data Loading and Union:** Multiple CSV files containing network traffic captures are loaded and merged into a single DataFrame.
+
+
+**Data Cleaning and Transformation:**
+Timestamps are converted to datetime format.
+MAC addresses and ports are converted to numerical values.
+Protocol column is mapped to numerical values.
+Non-numeric and missing values are replaced with appropriate values.
+
+
+**Temporal Splitting:** The dataset is split into training and testing sets, with the training set containing the first 80% of the temporal data and the testing set containing the last 20%.
+
+
+## Machine Learning Models
+
+### 1. Random Forest
+
+* **Training**: Random Forest regression model is trained on the training data.
+* **Prediction**: Predictions are made on the testing data.
+* **Evaluation**: Mean Squared Error (MSE) and R-squared (R^2) scores are computed to evaluate the model's performance.
+  
+### 2. Prophet
+
+* **Data Preparation**: Data is resampled at different intervals for Prophet modeling.
+* **Training:** Prophet model is trained on the training data with a personalized daily seasonality.
+* **Prediction**: Predictions are made on the testing data.
+* **Evaluation**: MSE and R^2 scores are calculated for each resampled interval.
+
+### 3. ARIMA
+
+* **Data Preparation**: Data is resampled similarly to Prophet for ARIMA modeling.
+* **Training:** ARIMA model is trained on the training data.
+* **Prediction:** Predictions are made on the testing data.
+* **Evaluation:** Predictions are compared against actual values to assess model performance.
+
+## Results Visualization
+
+
 
 ## Contributions
 * Alex Vernazza
