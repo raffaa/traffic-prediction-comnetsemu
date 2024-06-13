@@ -32,8 +32,8 @@ class SimpleTopology(Topo):
         
         # Create templates
         host_config = dict(inNamespace=True)
-        link_config = dict()
-        host_link_config = dict()
+        link_config = {'bw': 500, 'delay': '20ms'}
+        host_link_config = {'bw': 200, 'delay': '5ms'}
 
         # Create switch nodes
         for i in range(2):
@@ -66,8 +66,8 @@ class ComplexTopology(Topo):
         
         # Create templates
         host_config = dict(inNamespace=True)
-        link_config = dict()
-        host_link_config = dict()
+        link_config = {'bw': 500, 'delay': '20ms'}
+        host_link_config = {'bw': 200, 'delay': '5ms'}
 
         # Create switch nodes
         for i in range(4):
