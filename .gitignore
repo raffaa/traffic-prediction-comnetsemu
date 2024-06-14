@@ -1,3 +1,6 @@
 
 *.pcap
 /__pycache__
+network_configuration.txt
+/captures
+/plots
