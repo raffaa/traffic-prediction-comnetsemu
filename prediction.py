@@ -12,6 +12,15 @@ os.system("rm -rf ./plots/*.png")
 # Remove previous comulative dataset
 os.system("rm ./captures/united_traffic.csv")
 
+print("[INFO] Removed previous files.")
+
+# Create plot folder
+plots_dir = "./plots"
+if not os.path.exists(plots_dir):
+    os.makedirs(plots_dir)
+
+print("[INFO] Created plot folder.")
+
 # DATASET UNION
 folder_path = './captures'
 
@@ -75,6 +84,8 @@ sampling_intervals = ['100L', '300L', '500L']
 
 # RANDOM FOREST
 
+print("[INFO] Training with Random Forest.")
+
 # Training of Random Forest on the first 80% temporal data
 regressor = RandomForestRegressor(n_estimators=100, random_state=42)
 regressor.fit(X_train, y_train)
@@ -86,6 +97,7 @@ y_test = test_df['Packet Count']
 y_pred_last_20_percent = regressor.predict(X_test)
 
 # Metrics evaluation
+print("Metrics evaluation:")
 mse_train = mean_squared_error(y_train, regressor.predict(X_train))
 r2_train = r2_score(y_train, regressor.predict(X_train))
 
@@ -97,11 +109,6 @@ print(f'Test MSE: {mse_test}, R2: {r2_test}')
 
 # Adding predictions to the test DataFrame
 test_df.loc[:, 'Predicted Packet Count'] = y_pred_last_20_percent
-
-# Create plot folder
-plots_dir = "./plots"
-if not os.path.exists(plots_dir):
-    os.makedirs(plots_dir)
 
 # Plot Random Forest
 plt.figure(figsize=(18, 6))
@@ -126,18 +133,28 @@ for i, interval in enumerate(sampling_intervals):
 plt.tight_layout()
 # plt.show()
 plt.savefig('./plots/random-forest.png')
+print("Random Forest plot saved.")
 
 # ARIMA
+
+print("[INFO] Training with ARIMA.")
+
 df_arima = df[['Timestamp', 'Packet Count']].copy()
 results_arima = {}
 
+# Perform Dickey-Fuller test on a sample of the data
+sample_size = 10000
+df_sample = df_arima['Packet Count'].sample(n=sample_size, random_state=42)
+
+print(f"Statistics on a subset of size {sample_size}:")
+
 # stationariety test (Dickey-Fuller)
-# result = adfuller(df_arima['Packet Count'])
-# print('ADF Statistic:', result[0])
-# print('p-value:', result[1])
-# for key, value in result[4].items():
-#     print('Critial Values:')
-#     print(f'   {key}, {value}')
+result = adfuller(df_sample)
+print('ADF Statistic:', result[0])
+print('p-value:', result[1])
+for key, value in result[4].items():
+    print('Critial Values:')
+    print(f'   {key}, {value}')
 
 fig, axs = plt.subplots(3, 1, figsize=(18, 6))
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -157,8 +174,8 @@ for i, interval in enumerate(sampling_intervals):
     test_ts = ts_regolare[train_size:]
 
     # Check if train_ts and test_ts have no missing values
-    # train_ts.dropna(inplace=True)
-    # test_ts.dropna(inplace=True)
+    train_ts.dropna(inplace=True)
+    test_ts.dropna(inplace=True)
 
     order = (30, 1, 1)  # ARIMA order
     model = ARIMA(train_ts, order=order)
@@ -186,7 +203,9 @@ for i, interval in enumerate(sampling_intervals):
 plt.tight_layout()
 # plt.show()
 plt.savefig('./plots/arima.png')
+print("ARIMA plot saved.")
 
+print("[INFO] Plotting comparison.")
 # Plot comparison between all the last 20% predicted data (RF + ARIMA)
 plt.figure(figsize=(18, 9))
 for i, interval in enumerate(sampling_intervals):
@@ -213,3 +232,6 @@ for i, interval in enumerate(sampling_intervals):
 plt.tight_layout()
 # plt.show()
 plt.savefig('./plots/comparison.png')
+print("Compared plots saved.")
+
+print("[INFO] Done.")
