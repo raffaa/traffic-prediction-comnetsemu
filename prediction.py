@@ -1,15 +1,19 @@
-#codice finale
+import warnings
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error, r2_score
-import seaborn as sns
-import numpy as np
+from statsmodels.tsa.stattools import adfuller
+
+# Remove previous plots
+os.system("rm -rf ./plots/*.png")
+# Remove previous comulative dataset
+os.system("rm ./captures/united_traffic.csv")
 
 # DATASET UNION
-folder_path = 'C:\\Users\\Utente\\Desktop\\networking2\\captures-high'
+folder_path = './captures'
 
 df_list = []
 for filename in os.listdir(folder_path):
@@ -22,7 +26,7 @@ for filename in os.listdir(folder_path):
 df = pd.concat(df_list, ignore_index=True)
 
 # DataFrame saving in a unique CSV file
-output_file_path = r'C:\\Users\\Utente\\Desktop\\networking2\\captures-high\\united_traffic.csv'
+output_file_path = './captures/united_traffic.csv'
 df.to_csv(output_file_path, index=False)
 
 df = pd.read_csv(output_file_path)
@@ -31,6 +35,9 @@ df = pd.read_csv(output_file_path)
 
 # Convert the 'Timestamp' column to datetime format
 df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+
+# Multiply the traffic by duplicating rows
+df = pd.concat([df] * 3, ignore_index=True)
 
 # Dataframe sorting based on Timestamps
 df = df.sort_values(by='Timestamp')
@@ -43,14 +50,11 @@ df['Destination MAC'] = df['Destination MAC'].apply(lambda x: int(x.replace(':',
 protocol_mapping = {'TCP': 0, 'UDP': 1, 'ICMP': 2, 'Other': 3}
 df['Protocol'] = df['Protocol'].map(protocol_mapping)
 
-# Replace non-numeric and missing values with 0 (or an appropriate value)
+# Find and drop non-numeric and missing values
 df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']] = df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']].apply(pd.to_numeric, errors='coerce')
 df['Length'] = pd.to_numeric(df['Length'], errors='coerce')
 
 df = df.dropna()
-
-# Multiply the traffic by duplicating rows
-df = pd.concat([df] * 2, ignore_index=True)
 
 # Calculate the packet counts
 df['Packet Count'] = df.groupby('Timestamp').cumcount() + 1
@@ -65,6 +69,9 @@ train_df = df[df['Timestamp'] < time_20_percent].copy()
 # Feature and target selection for the training phase
 X_train = train_df[['Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Elapsed time', 'Protocol']]
 y_train = train_df['Packet Count']
+
+# Definition of the desired sampling intervals (0.1s, 0.3s, 0.5s)
+sampling_intervals = ['100L', '300L', '500L']
 
 # RANDOM FOREST
 
@@ -91,17 +98,20 @@ print(f'Test MSE: {mse_test}, R2: {r2_test}')
 # Adding predictions to the test DataFrame
 test_df.loc[:, 'Predicted Packet Count'] = y_pred_last_20_percent
 
-# Definition of the desired sampling intervals (0.1s, 0.3s, 0.5s)
-sampling_intervals = ['0.1s', '0.3s', '0.5s']
+# Create plot folder
+plots_dir = "./plots"
+if not os.path.exists(plots_dir):
+    os.makedirs(plots_dir)
 
 # Plot Random Forest
-for interval in sampling_intervals:
-    plt.figure(figsize=(18, 8))
+plt.figure(figsize=(18, 6))
+for i, interval in enumerate(sampling_intervals):
     # Sampled Dataframe generation for train and test phases
     train_df_sampled = train_df.set_index('Timestamp').resample(interval).count().reset_index()
     test_df_sampled = test_df.set_index('Timestamp').resample(interval).count().reset_index()
 
     # Plot of real train data and predicted test data
+    plt.subplot(3, 1, i + 1)
     plt.plot(train_df_sampled['Timestamp'], train_df_sampled['Packet Count'], label='Actual Packet Count', color='blue')
     plt.plot(test_df_sampled['Timestamp'], test_df_sampled['Packet Count'], color='blue')
     plt.plot(test_df_sampled['Timestamp'], test_df_sampled['Predicted Packet Count'], label='Predicted Packet Count', color='orange')
@@ -112,15 +122,27 @@ for interval in sampling_intervals:
     plt.title(f'Random Forest: Predictions vs Actual Packet Count (Sampled every {interval})')
     plt.legend()
     plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+
+plt.tight_layout()
+# plt.show()
+plt.savefig('./plots/random-forest.png')
 
 # ARIMA
 df_arima = df[['Timestamp', 'Packet Count']].copy()
 results_arima = {}
 
-for interval in sampling_intervals:
-    plt.figure(figsize=(18, 8))
+# stationariety test (Dickey-Fuller)
+# result = adfuller(df_arima['Packet Count'])
+# print('ADF Statistic:', result[0])
+# print('p-value:', result[1])
+# for key, value in result[4].items():
+#     print('Critial Values:')
+#     print(f'   {key}, {value}')
+
+fig, axs = plt.subplots(3, 1, figsize=(18, 6))
+warnings.filterwarnings("ignore", category=UserWarning)
+
+for i, interval in enumerate(sampling_intervals):
     # Data sampling for ARIMA
     df_sampled = df_arima.set_index('Timestamp').resample(interval).count().reset_index()
     
@@ -135,12 +157,12 @@ for interval in sampling_intervals:
     test_ts = ts_regolare[train_size:]
 
     # Check if train_ts and test_ts have no missing values
-    train_ts.dropna(inplace=True)
-    test_ts.dropna(inplace=True)
+    # train_ts.dropna(inplace=True)
+    # test_ts.dropna(inplace=True)
 
-    order = (30, 1, 0)  # ARIMA order
+    order = (30, 1, 1)  # ARIMA order
     model = ARIMA(train_ts, order=order)
-    model_fit = model.fit()
+    model_fit = model.fit(method_kwargs={'maxiter':800})
     forecast_steps = len(test_ts)
     forecast = model_fit.forecast(steps=forecast_steps)
 
@@ -149,38 +171,45 @@ for interval in sampling_intervals:
     results_arima[interval] = test_df_arima
 
     # Plot of real data and predicted data: ARIMA
-    plt.plot(df_sampled['Timestamp'], df_sampled['Packet Count'], label='Actual Packet Count', color='blue')
-    plt.plot(test_df_arima['Timestamp'], test_df_arima['ARIMA Predicted Packet Count'], label='ARIMA Predicted Packet Count', color='orange')
+    axs[i].plot(df_sampled['Timestamp'], df_sampled['Packet Count'], label='Actual Packet Count', color='blue')
+    axs[i].plot(test_df_arima['Timestamp'], test_df_arima['ARIMA Predicted Packet Count'], label='ARIMA Predicted Packet Count', color='orange')
     
     split_point = df_sampled['Timestamp'].iloc[train_size]
-    plt.axvline(x=split_point, linestyle='--', color='red', label='80%-20% Split')
+    axs[i].axvline(x=split_point, linestyle='--', color='red', label='80%-20% Split')
 
-    plt.xlabel('Timestamp')
-    plt.ylabel('Packet Count')
-    plt.title(f'ARIMA: Predictions vs Actual Packet Count (Sampled every {interval})')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+    axs[i].set_xlabel('Timestamp')
+    axs[i].set_ylabel('Packet Count')
+    axs[i].set_title(f'ARIMA: Predictions vs Actual Packet Count (Sampled every {interval})')
+    axs[i].legend()
+    axs[i].grid(True)
+
+plt.tight_layout()
+# plt.show()
+plt.savefig('./plots/arima.png')
 
 # Plot comparison between all the last 20% predicted data (RF + ARIMA)
-for interval in sampling_intervals:
-    plt.figure(figsize=(18, 8))
+plt.figure(figsize=(18, 9))
+for i, interval in enumerate(sampling_intervals):
+    plt.subplot(3, 1, i + 1)
     
     # Random Forest
     plt.plot(test_df.set_index('Timestamp').resample(interval).count().reset_index()['Timestamp'],
              test_df.set_index('Timestamp').resample(interval).count().reset_index()['Packet Count'], label='Actual Packet Count', color='blue')
     plt.plot(test_df.set_index('Timestamp').resample(interval).count().reset_index()['Timestamp'],
-             test_df.set_index('Timestamp').resample(interval).count().reset_index()['Predicted Packet Count'], label='RF Predicted Packet Count',  linestyle='--', color='orange')
+             test_df.set_index('Timestamp').resample(interval).count().reset_index()['Predicted Packet Count'], label='Random Forest Predicted Packet Count', color='orange')
     
     # ARIMA
-    arima_test = results_arima[interval]
-    plt.plot(arima_test['Timestamp'], arima_test['ARIMA Predicted Packet Count'], label='ARIMA Predicted Packet Count',  linestyle='--', color='limegreen')
+    test_df_arima = results_arima[interval]
+    plt.plot(test_df_arima['Timestamp'], test_df_arima['ARIMA Predicted Packet Count'], label='ARIMA Predicted Packet Count', color='green')
     
+    plt.axvline(x=time_20_percent, linestyle='--', color='red', label='80%-20% Split')
+
     plt.xlabel('Timestamp')
     plt.ylabel('Packet Count')
-    plt.title(f'Predictions vs Actual Packet Count (Sampled every {interval})')
+    plt.title(f'Random Forest vs ARIMA Predictions (Sampled every {sampling_intervals[i]})')
     plt.legend()
     plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+
+plt.tight_layout()
+# plt.show()
+plt.savefig('./plots/comparison.png')
