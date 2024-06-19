@@ -58,7 +58,7 @@ The dataset used in this project consists of network traffic captures stored in 
 Timestamps are converted to datetime format.
 MAC addresses and ports are converted to numerical values.
 Protocol column is mapped to numerical values.
-Non-numeric and missing values are replaced with appropriate values.
+Non-numeric and missing values are dropped.
 
 
 **Temporal Splitting:** The dataset is split into training and testing sets, with the training set containing the first 80% of the temporal data and the testing set containing the last 20%.
