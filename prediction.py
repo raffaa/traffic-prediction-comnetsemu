@@ -6,11 +6,12 @@ from sklearn.ensemble import RandomForestRegressor
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # Remove previous plots
 os.system("rm -rf ./plots/*.png")
 # Remove previous comulative dataset
-os.system("rm ./captures/united_traffic.csv")
+# os.system("rm ./captures/united_traffic.csv")
 
 print("[INFO] Removed previous files.")
 
@@ -46,7 +47,7 @@ df = pd.read_csv(output_file_path)
 df['Timestamp'] = pd.to_datetime(df['Timestamp'])
 
 # Multiply the traffic by duplicating rows
-df = pd.concat([df] * 3, ignore_index=True)
+df = pd.concat([df] * 2, ignore_index=True)
 
 # Dataframe sorting based on Timestamps
 df = df.sort_values(by='Timestamp')
@@ -111,24 +112,22 @@ print(f'Test MSE: {mse_test}, R2: {r2_test}')
 test_df.loc[:, 'Predicted Packet Count'] = y_pred_last_20_percent
 
 # Plot Random Forest
-plt.figure(figsize=(18, 6))
+fig, axss = plt.subplots(3, 1, figsize=(18, 6))
 for i, interval in enumerate(sampling_intervals):
     # Sampled Dataframe generation for train and test phases
     train_df_sampled = train_df.set_index('Timestamp').resample(interval).count().reset_index()
     test_df_sampled = test_df.set_index('Timestamp').resample(interval).count().reset_index()
 
     # Plot of real train data and predicted test data
-    plt.subplot(3, 1, i + 1)
-    plt.plot(train_df_sampled['Timestamp'], train_df_sampled['Packet Count'], label='Actual Packet Count', color='blue')
-    plt.plot(test_df_sampled['Timestamp'], test_df_sampled['Packet Count'], color='blue')
-    plt.plot(test_df_sampled['Timestamp'], test_df_sampled['Predicted Packet Count'], label='Predicted Packet Count', color='orange')
-    plt.axvline(x=time_20_percent, linestyle='--', color='red', label='80%-20% Split')
+    axss[i].plot(train_df_sampled['Timestamp'], train_df_sampled['Packet Count'], label='Actual Packet Count', color='blue')
+    axss[i].plot(test_df_sampled['Timestamp'], test_df_sampled['Predicted Packet Count'], label='Predicted Packet Count', color='orange')
+    axss[i].axvline(x=time_20_percent, linestyle='--', color='red', label='80%-20% Split')
 
-    plt.xlabel('Timestamp')
-    plt.ylabel('Packet Count')
-    plt.title(f'Random Forest: Predictions vs Actual Packet Count (Sampled every {interval})')
-    plt.legend()
-    plt.grid(True)
+    axss[i].set_xlabel('Timestamp')
+    axss[i].set_ylabel('Packet Count')
+    axss[i].set_title(f'Random Forest: Predictions vs Actual Packet Count (Sampled every {interval})')
+    axss[i].legend()
+    axss[i].grid(True)
 
 plt.tight_layout()
 # plt.show()
@@ -156,6 +155,15 @@ for key, value in result[4].items():
     print('Critial Values:')
     print(f'   {key}, {value}')
 
+# Tracciare i grafici ACF e PACF
+fig, ax = plt.subplots(2, 1, figsize=(12, 8))
+
+plot_acf(df_sample, lags=40, ax=ax[0])
+plot_pacf(df_sample, lags=40, ax=ax[1])
+plt.tight_layout()
+plt.savefig('./plots/p-acf.png')
+print("ACF and PACF plot saved.")
+
 fig, axs = plt.subplots(3, 1, figsize=(18, 6))
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -177,7 +185,7 @@ for i, interval in enumerate(sampling_intervals):
     train_ts.dropna(inplace=True)
     test_ts.dropna(inplace=True)
 
-    order = (30, 1, 1)  # ARIMA order
+    order = (30, 0, 30)  # ARIMA order
     model = ARIMA(train_ts, order=order)
     model_fit = model.fit(method_kwargs={'maxiter':800})
     forecast_steps = len(test_ts)
@@ -219,7 +227,7 @@ for i, interval in enumerate(sampling_intervals):
     
     # ARIMA
     test_df_arima = results_arima[interval]
-    plt.plot(test_df_arima['Timestamp'], test_df_arima['ARIMA Predicted Packet Count'], label='ARIMA Predicted Packet Count', color='green')
+    plt.plot(test_df_arima['Timestamp'], test_df_arima['ARIMA Predicted Packet Count'], label='ARIMA Predicted Packet Count', linestyle='--', color='green')
     
     plt.axvline(x=time_20_percent, linestyle='--', color='red', label='80%-20% Split')
 
