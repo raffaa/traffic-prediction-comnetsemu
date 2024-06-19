@@ -44,6 +44,13 @@ The script builds a complex topology and generates traffic for 40 seconds. Note 
 Note: Mininet requires this script to be run as root, therefore using ```sudo``` is mandatory.
 
 ## Traffic Prediction with Machine Learning Models
+## Running the Code
+
+To execute the traffic prediction code, use the following command in the terminal:
+
+```
+python prediction.py
+```
 
 ### Dataset
 
