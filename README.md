@@ -77,7 +77,7 @@ Rows with non-numeric or missing values are dropped.
 * **Data Preparation**: Data is resampled similarly to Prophet for ARIMA modeling.
 * **Training:** ARIMA model is trained on the training data.
 * **Prediction:** Predictions are made on the testing data.
-* **Evaluation:** Predictions are compared against actual values to assess model performance.
+* **Evaluation:** Predictions are compared to actual values to assess model performance.
 
 ## Results Visualization
 
