@@ -1,7 +1,6 @@
 pandas
-searbon
+matplotlib
+seaborn
 scikit-learn
 statsmodels
-prophet
-plotly
 scapy
