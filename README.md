@@ -61,7 +61,7 @@ Protocol column is mapped to numerical values.
 Rows with non-numeric or missing values are dropped.
 
 
-**Temporal Splitting:** The dataset is split into training and testing sets, with the training set containing the first 80% of the temporal data and the testing set containing the last 20%.
+**Temporal Splitting:** The dataset is splitted into training and testing sets, with the training set containing the first 80% of the temporal data and the testing the last 20%.
 
 
 ## Machine Learning Models
