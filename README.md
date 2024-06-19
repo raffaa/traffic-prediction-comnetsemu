@@ -8,6 +8,8 @@ The goal of this project is to analyze traffic patterns and predict traffic in a
 
 You can install the network emulator by following the instructions on [Prof. Granelli website](https://www.granelli-lab.org/researches/relevant-projects/comnetsemu-labs). This virtual machine includes the Mininet emulator RYU, which are crucial to running our project.
 
+Developed and tested on **Python 3.8.10**.
+
 ## Getting Started
 
 * Clone the repository:
@@ -78,10 +80,6 @@ Rows with non-numeric or missing values are dropped.
 * **Training:** ARIMA model is trained on the training data.
 * **Prediction:** Predictions are made on the testing data.
 * **Evaluation:** Predictions are compared to actual values to assess model performance.
-
-## Results Visualization
-
-
 
 ## Contributions
 * Alex Vernazza
