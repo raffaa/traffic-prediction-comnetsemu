@@ -43,7 +43,7 @@ Note: Mininet requires this script to be run as root, therefore using ```sudo```
 
 ## Traffic Prediction with Machine learning Models
 
-This repository contains Python scripts for predicting network traffic using machine learning techniques. The main focus is on comparing the performance of Random Forest, Prophet, and ARIMA models in predicting network traffic.
+This repository contains Python scripts for predicting network traffic using machine learning techniques. The main focus is on comparing the performance of Random Forest and ARIMA models in predicting network traffic.
 
 ### Dataset
 
@@ -72,14 +72,7 @@ Non-numeric and missing values are replaced with appropriate values.
 * **Prediction**: Predictions are made on the testing data.
 * **Evaluation**: Mean Squared Error (MSE) and R-squared (R^2) scores are computed to evaluate the model's performance.
   
-### 2. Prophet
-
-* **Data Preparation**: Data is resampled at different intervals for Prophet modeling.
-* **Training:** Prophet model is trained on the training data with a personalized daily seasonality.
-* **Prediction**: Predictions are made on the testing data.
-* **Evaluation**: MSE and R^2 scores are calculated for each resampled interval.
-
-### 3. ARIMA
+### 2. ARIMA
 
 * **Data Preparation**: Data is resampled similarly to Prophet for ARIMA modeling.
 * **Training:** ARIMA model is trained on the training data.
