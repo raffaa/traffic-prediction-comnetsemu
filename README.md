@@ -96,10 +96,8 @@ protocol_mapping = {'TCP': 0, 'UDP': 1, 'ICMP': 2, 'Other': 3}
 df['Protocol'] = df['Protocol'].map(protocol_mapping)
 
 # Replace non-numeric and missing values with 0 (or an appropriate value)
-df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']] = df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']].apply(pd.to_numeric, errors='coerce')
-df['Length'] = pd.to_numeric(df['Length'], errors='coerce')
-
-df = df.dropna()
+df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']] = df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']].apply(pd.to_numeric, errors='coerce').fillna(0)
+df['Length'] = pd.to_numeric(df['Length'], errors='coerce').fillna(0)
 
 # Multiply the traffic by duplicating rows
 df = pd.concat([df] * 1, ignore_index=True)
