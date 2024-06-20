@@ -128,22 +128,22 @@ We defined the desired sampling intervals (0.1s, 0.3s, 0.5s) to capture variatio
 
 ```python
 #Definition of the desired sampling intervals (0.1s, 0.3s, 0.5s)
-sampling_intervals = ['0.1s', '0.3s', '0.5s']
+sampling_intervals = ['100L', '300L', '500L']
 ```
 
 ### 1. Random Forest
 
 * **Training**: The Random Forest regression model is trained on the preprocessed training data.
   
-#### Regression in Random Forest
+    #### Regression in Random Forest
 
-Random Forest leverages regression techniques to predict packet counts based on a selection of input features. By constructing an ensemble of decision trees, each trained on different subsets of the data, the model enhances predictive accuracy and generalizability.
+    Random Forest leverages regression techniques to predict packet counts based on a selection of input features. By constructing an ensemble of decision trees, each         trained on different subsets of the data, the model enhances predictive accuracy and generalizability.
 
-```python
-# Training of Random Forest on the first 80% temporal data
-regressor = RandomForestRegressor(n_estimators=100, random_state=42)
-regressor.fit(X_train, y_train)
-```
+    ```python
+    # Training of Random Forest on the first 80% temporal data
+    regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+    regressor.fit(X_train, y_train)
+    ```
 
 
 * **Prediction**: It generates predictions on the testing dataset.
@@ -155,24 +155,24 @@ regressor.fit(X_train, y_train)
 
 * **Data Preparation for ARIMA**: Prepare the data by resampling the time series at regular intervals, a prerequisite for ARIMA modeling.
 
-#### ARIMA: Order and Fit
-
-ARIMA models are characterized by their (p, d, q) parameters, representing auto-regressive, integrated, and moving average components, respectively. These parameters are crucial in configuring the model's behavior and optimizing its predictive capabilities.
-
-```python
-order = (30, 1, 0)  # ARIMA order
-model = ARIMA(train_ts, order=order)
-model_fit = model.fit()
-forecast_steps = len(test_ts)
-forecast = model_fit.forecast(steps=forecast_steps)
-```
+    #### ARIMA: Order and Fit
+    
+    ARIMA models are characterized by their (p, d, q) parameters, representing auto-regressive, integrated, and moving average components, respectively. These parameters       are crucial in configuring the model's behavior and optimizing its predictive capabilities.
+    
+    ```python
+    order = (22, 0, 22)  # ARIMA order
+    model = ARIMA(train_ts, order=order)
+    model_fit = model.fit()
+    forecast_steps = len(test_ts)
+    forecast = model_fit.forecast(steps=forecast_steps)
+    ```
 
   
 * **Training and Forecasting**: Train the ARIMA model on the training dataset and utilize it to forecast future packet counts.
 
   #### Regular Interval Series for ARIMA
 
-To ensure accurate predictions, ARIMA necessitates time series data that is resampled at regular intervals. This step standardizes the temporal granularity of the dataset, aligning it with the model's requirements for effective forecasting.
+    To ensure accurate predictions, ARIMA necessitates time series data that is resampled at regular intervals. This step standardizes the temporal granularity of the          dataset, aligning it with the model's requirements for effective forecasting.
 
   
 * **Evaluation**: Compare ARIMA's forecasted values with actual values to evaluate its predictive performance
