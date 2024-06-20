@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from statsmodels.tsa.arima.model import ARIMA
-from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
@@ -47,7 +46,7 @@ df = pd.read_csv(output_file_path)
 df['Timestamp'] = pd.to_datetime(df['Timestamp'])
 
 # Multiply the traffic by duplicating rows
-df = pd.concat([df] * 2, ignore_index=True)
+df = pd.concat([df] * 1, ignore_index=True)
 
 # Dataframe sorting based on Timestamps
 df = df.sort_values(by='Timestamp')
@@ -60,11 +59,9 @@ df['Destination MAC'] = df['Destination MAC'].apply(lambda x: int(x.replace(':',
 protocol_mapping = {'TCP': 0, 'UDP': 1, 'ICMP': 2, 'Other': 3}
 df['Protocol'] = df['Protocol'].map(protocol_mapping)
 
-# Find and drop non-numeric and missing values
-df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']] = df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']].apply(pd.to_numeric, errors='coerce')
-df['Length'] = pd.to_numeric(df['Length'], errors='coerce')
-
-df = df.dropna()
+# Replace non-numeric and missing values with 0 (or an appropriate value)
+df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']] = df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']].apply(pd.to_numeric, errors='coerce').fillna(0)
+df['Length'] = pd.to_numeric(df['Length'], errors='coerce').fillna(0)
 
 # Calculate the packet counts
 df['Packet Count'] = df.groupby('Timestamp').cumcount() + 1
@@ -96,17 +93,6 @@ test_df = df[df['Timestamp'] >= time_20_percent].copy()
 X_test = test_df[['Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Elapsed time', 'Protocol']]
 y_test = test_df['Packet Count']
 y_pred_last_20_percent = regressor.predict(X_test)
-
-# Metrics evaluation
-print("Metrics evaluation:")
-mse_train = mean_squared_error(y_train, regressor.predict(X_train))
-r2_train = r2_score(y_train, regressor.predict(X_train))
-
-mse_test = mean_squared_error(y_test, y_pred_last_20_percent)
-r2_test = r2_score(y_test, y_pred_last_20_percent)
-
-print(f'Training MSE: {mse_train}, R2: {r2_train}')
-print(f'Test MSE: {mse_test}, R2: {r2_test}')
 
 # Adding predictions to the test DataFrame
 test_df.loc[:, 'Predicted Packet Count'] = y_pred_last_20_percent
@@ -185,7 +171,7 @@ for i, interval in enumerate(sampling_intervals):
     train_ts.dropna(inplace=True)
     test_ts.dropna(inplace=True)
 
-    order = (30, 0, 30)  # ARIMA order
+    order = (22, 0, 22)  # ARIMA order
     model = ARIMA(train_ts, order=order)
     model_fit = model.fit(method_kwargs={'maxiter':800})
     forecast_steps = len(test_ts)
