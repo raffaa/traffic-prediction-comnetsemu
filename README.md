@@ -51,7 +51,7 @@ Note: Mininet requires this script to be run as root, therefore using ```sudo```
 To execute the traffic prediction code, use the following command in the terminal:
 
 ```
-python prediction.py
+python3 prediction.py
 ```
 
 ### Dataset
