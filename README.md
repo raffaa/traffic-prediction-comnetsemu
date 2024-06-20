@@ -43,6 +43,8 @@ The script builds a complex topology and generates traffic for 40 seconds. Note 
 
 Note: Mininet requires this script to be run as root, therefore using ```sudo``` is mandatory.
 
+
+
 ## Traffic Prediction with Machine Learning Models
 ## Running the Code
 
@@ -119,6 +121,15 @@ y_train = train_df['Packet Count']
 
 
 ### Machine Learning Models
+
+### Traffic Sampling Intervals
+
+We defined the desired sampling intervals (0.1s, 0.3s, 0.5s) to capture variations in traffic patterns.
+
+```python
+#Definition of the desired sampling intervals (0.1s, 0.3s, 0.5s)
+sampling_intervals = ['0.1s', '0.3s', '0.5s']
+```
 
 ### 1. Random Forest
 
