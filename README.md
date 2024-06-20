@@ -74,48 +74,10 @@ Before applying machine learning models, it's crucial to clean and transform the
 
 3. **Protocol Mapping**: Map protocol types (e.g., TCP, UDP, ICMP) to numerical values. This transformation allows the models to process categorical data effectively.
 
-4. **Handling Missing Values**: Remove rows with non-numeric or missing values. This ensures that our models are trained on complete and reliable data, minimizing potential biases or inaccuracies.
+4. **Handling Missing Values**: Replace rows with non-numeric or missing values with 0. This ensures that our models are trained on complete and reliable data, minimizing potential biases or inaccuracies.
 
 5. **Feature Engineering**: Enhance the dataset by creating additional features that might improve prediction accuracy. For instance, calculating packet counts or deriving new metrics based on network traffic patterns.
 
-```python
-# DATASET PROCESSING
-
-# Convert the 'Timestamp' column to datetime format
-df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-
-# Dataframe sorting based on Timestamps
-df = df.sort_values(by='Timestamp')
-
-# MAC and port columns in numerical values
-df['Source MAC'] = df['Source MAC'].apply(lambda x: int(x.replace(':', ''), 16) if isinstance(x, str) else x)
-df['Destination MAC'] = df['Destination MAC'].apply(lambda x: int(x.replace(':', ''), 16) if isinstance(x, str) else x)
-
-# Protocol column in numerical values
-protocol_mapping = {'TCP': 0, 'UDP': 1, 'ICMP': 2, 'Other': 3}
-df['Protocol'] = df['Protocol'].map(protocol_mapping)
-
-# Replace non-numeric and missing values with 0 (or an appropriate value)
-df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']] = df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']].apply(pd.to_numeric, errors='coerce').fillna(0)
-df['Length'] = pd.to_numeric(df['Length'], errors='coerce').fillna(0)
-
-# Multiply the traffic by duplicating rows
-df = pd.concat([df] * 1, ignore_index=True)
-
-# Calculate the packet counts
-df['Packet Count'] = df.groupby('Timestamp').cumcount() + 1
-
-# Calculation of the index corresponding to the last 20% of the time
-time_range = df['Timestamp'].max() - df['Timestamp'].min()
-time_20_percent = df['Timestamp'].min() + 0.8 * time_range
-
-# Selection of the data before the last 20% of the time for training
-train_df = df[df['Timestamp'] < time_20_percent].copy()
-
-# Feature and target selection for the training phase
-X_train = train_df[['Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Elapsed time', 'Protocol']]
-y_train = train_df['Packet Count']
-```
 
 
 ### Machine Learning Models
@@ -126,7 +88,7 @@ We defined the desired sampling intervals (0.1s, 0.3s, 0.5s) to capture variatio
 
 ```python
 #Definition of the desired sampling intervals (0.1s, 0.3s, 0.5s)
-sampling_intervals = ['100L', '300L', '500L']
+sampling_intervals = ['0.1s', '0.3s', '0.5s']
 ```
 
 ### 1. Random Forest
