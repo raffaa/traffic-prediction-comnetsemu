@@ -76,33 +76,96 @@ Before applying machine learning models, it's crucial to clean and transform the
 
 5. **Feature Engineering**: Enhance the dataset by creating additional features that might improve prediction accuracy. For instance, calculating packet counts or deriving new metrics based on network traffic patterns.
 
+```python
+# DATASET PROCESSING
+
+# Convert the 'Timestamp' column to datetime format
+df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+
+# Dataframe sorting based on Timestamps
+df = df.sort_values(by='Timestamp')
+
+# MAC and port columns in numerical values
+df['Source MAC'] = df['Source MAC'].apply(lambda x: int(x.replace(':', ''), 16) if isinstance(x, str) else x)
+df['Destination MAC'] = df['Destination MAC'].apply(lambda x: int(x.replace(':', ''), 16) if isinstance(x, str) else x)
+
+# Protocol column in numerical values
+protocol_mapping = {'TCP': 0, 'UDP': 1, 'ICMP': 2, 'Other': 3}
+df['Protocol'] = df['Protocol'].map(protocol_mapping)
+
+# Replace non-numeric and missing values with 0 (or an appropriate value)
+df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']] = df[['Source Port', 'Destination Port', 'Elapsed time', 'Protocol']].apply(pd.to_numeric, errors='coerce')
+df['Length'] = pd.to_numeric(df['Length'], errors='coerce')
+
+df = df.dropna()
+
+# Multiply the traffic by duplicating rows
+df = pd.concat([df] * 1, ignore_index=True)
+
+# Calculate the packet counts
+df['Packet Count'] = df.groupby('Timestamp').cumcount() + 1
+
+# Calculation of the index corresponding to the last 20% of the time
+time_range = df['Timestamp'].max() - df['Timestamp'].min()
+time_20_percent = df['Timestamp'].min() + 0.8 * time_range
+
+# Selection of the data before the last 20% of the time for training
+train_df = df[df['Timestamp'] < time_20_percent].copy()
+
+# Feature and target selection for the training phase
+X_train = train_df[['Source MAC', 'Destination MAC', 'Source Port', 'Destination Port', 'Elapsed time', 'Protocol']]
+y_train = train_df['Packet Count']
+```
+
+
 ### Machine Learning Models
 
 ### 1. Random Forest
 
 * **Training**: The Random Forest regression model is trained on the preprocessed training data.
-* **Prediction**: It generates predictions on the testing dataset.
-* **Evaluation**: Performance metrics such as Mean Squared Error (MSE) and R-squared (R^2) are computed to assess the model's effectiveness.
-
+  
 #### Regression in Random Forest
 
 Random Forest leverages regression techniques to predict packet counts based on a selection of input features. By constructing an ensemble of decision trees, each trained on different subsets of the data, the model enhances predictive accuracy and generalizability.
 
+```python
+# Training of Random Forest on the first 80% temporal data
+regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+regressor.fit(X_train, y_train)
+```
+
+
+* **Prediction**: It generates predictions on the testing dataset.
+
+* **Evaluation**: Performance metrics such as Mean Squared Error (MSE) and R-squared (R^2) are computed to assess the model's effectiveness.
+
+
 ### 2. ARIMA
 
 * **Data Preparation for ARIMA**: Prepare the data by resampling the time series at regular intervals, a prerequisite for ARIMA modeling.
-  
-* **Training and Forecasting**: Train the ARIMA model on the training dataset and utilize it to forecast future packet counts.
-  
-* **Evaluation**: Compare ARIMA's predictions against actual values to evaluate its predictive performance.
 
 #### ARIMA: Order and Fit
 
 ARIMA models are characterized by their (p, d, q) parameters, representing auto-regressive, integrated, and moving average components, respectively. These parameters are crucial in configuring the model's behavior and optimizing its predictive capabilities.
 
-#### Regular Interval Series for ARIMA
+```python
+order = (30, 1, 0)  # ARIMA order
+model = ARIMA(train_ts, order=order)
+model_fit = model.fit()
+forecast_steps = len(test_ts)
+forecast = model_fit.forecast(steps=forecast_steps)
+```
+
+  
+* **Training and Forecasting**: Train the ARIMA model on the training dataset and utilize it to forecast future packet counts.
+
+  #### Regular Interval Series for ARIMA
 
 To ensure accurate predictions, ARIMA necessitates time series data that is resampled at regular intervals. This step standardizes the temporal granularity of the dataset, aligning it with the model's requirements for effective forecasting.
+
+  
+* **Evaluation**: Compare ARIMA's forecasted values with actual values to evaluate its predictive performance
+
 
 
 
